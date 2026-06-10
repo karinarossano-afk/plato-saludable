@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EL DESAFÍO DEL PLATO SALUDABLE - GOED</title>
+    
+    <!-- CDNs de React, ReactDOM, Babel, Tailwind CSS y FontAwesome para garantizar ejecución offline-ready -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f0fdf4;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .font-kids { font-family: 'Montserrat', sans-serif; }
+        
+        /* Animaciones para elementos interactivos */
+        .food-bounce:hover {
+            transform: scale(1.1) rotate(3deg);
+            transition: all 0.2s ease-in-out;
+        }
+        
+        /* Configuración de impresión de alta calidad para PDFs escolares */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            /* Ocultar barra de desplazamiento */
+            ::-webkit-scrollbar { display: none; }
+        }
+        
+        /* Efecto de scrollbar suave */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // === CONSTANTES: CATEGORÍAS DE ALIMENTOS ===
+        const CATEGORIES = {
+          FRUTAS: { id: 'frutas', name: 'FRUTAS', color: 'bg-red-100 border-red-400 text-red-700', icon: '🍎' },
+          VERDURAS: { id: 'verduras', name: 'VERDURAS', color: 'bg-emerald-100 border-emerald-400 text-emerald-700', icon: '🥕' },
+          LACTEOS: { id: 'lacteos', name: 'LÁCTEOS', color: 'bg-blue-100 border-blue-400 text-blue-700', icon: '🥛' },
+          CEREALES: { id: 'cereales', name: 'CEREALES Y LEGUMBRES', color: 'bg-amber-100 border-amber-400 text-amber-700', icon: '🌾' },
+          PROTEINAS: { id: 'proteinas', name: 'CARNES Y PESCADOS', color: 'bg-orange-100 border-orange-400 text-orange-700', icon: '🍗' },
+          BEBIDAS: { id: 'bebidas', name: 'BEBIDAS', color: 'bg-cyan-100 border-cyan-400 text-cyan-700', icon: '🥤' },
+          GOLOSINAS: { id: 'golosinas', name: 'GOLOSINAS Y SNACKS', color: 'bg-pink-100 border-pink-400 text-pink-700', icon: '🍩' }
+        };
+
+        // === BASE DE DATOS INICIAL DE ALIMENTOS (MAS DE 50 ITEMS) ===
+        const INITIAL_FOOD_DATABASE = [
+          // Frutas
+          { id: 'f1', name: 'MANZANA', category: 'frutas', emoji: '🍎', healthy: true, soundText: '¡Manzana! Dulce y crocante.' },
+          { id: 'f2', name: 'BANANA', category: 'frutas', emoji: '🍌', healthy: true, soundText: '¡Banana! Súper energía para correr.' },
+          { id: 'f3', name: 'FRUTILLA', category: 'frutas', emoji: '🍓', healthy: true, soundText: '¡Frutilla! ¡Qué rica fruta roja!' },
+          { id: 'f4', name: 'NARANJA', category: 'frutas', emoji: '🍊', healthy: true, soundText: '¡Naranja! Tiene mucha vitamina C.' },
+          { id: 'f5', name: 'UVA', category: 'frutas', emoji: '🍇', healthy: true, soundText: '¡Uva! Pequeña y muy dulce.' },
+          { id: 'f6', name: 'SANDÍA', category: 'frutas', emoji: '🍉', healthy: true, soundText: '¡Sandía! Muy fresca y jugosa.' },
+          { id: 'f7', name: 'DURAZNO', category: 'frutas', emoji: '🍑', healthy: true, soundText: '¡Durazno! Suave y perfumado.' },
+          { id: 'f8', name: 'PERA', category: 'frutas', emoji: '🍐', healthy: true, soundText: '¡Pera! Dulce y con mucha agua.' },
+          { id: 'f9', name: 'ANANÁ', category: 'frutas', emoji: '🍍', healthy: true, soundText: '¡Ananá! Muy rica y tropical.' },
+          { id: 'f10', name: 'CEREZA', category: 'frutas', emoji: '🍒', healthy: true, soundText: '¡Cereza! Pequeña, roja y sabrosa.' },
+
+          // Verduras
+          { id: 'v1', name: 'ZANAHORIA', category: 'verduras', emoji: '🥕', healthy: true, soundText: '¡Zanahoria! Hace muy bien a los ojos.' },
+          { id: 'v2', name: 'CHOCLO', category: 'verduras', emoji: '🌽', healthy: true, soundText: '¡Choclo! Amarillo y súper dulce.' },
+          { id: 'v3', name: 'TOMATE', category: 'verduras', emoji: '🍅', healthy: true, soundText: '¡Tomate! Jugoso para ensaladas.' },
+          { id: 'v4', name: 'BRÓCOLI', category: 'verduras', emoji: '🥦', healthy: true, soundText: '¡Brócoli! Parecen pequeños arbolitos verdes.' },
+          { id: 'v5', name: 'LECHUGA', category: 'verduras', emoji: '🥬', healthy: true, soundText: '¡Lechuga! Súper fresca y crujiente.' },
+          { id: 'v6', name: 'CALABAZA', category: 'verduras', emoji: '🎃', healthy: true, soundText: '¡Calabaza! Espectacular para hacer puré.' },
+          { id: 'v7', name: 'PALTA', category: 'verduras', emoji: '🥑', healthy: true, soundText: '¡Palta! Cremosa y súper saludable.' },
+          { id: 'v8', name: 'PAPA', category: 'verduras', emoji: '🥔', healthy: true, soundText: '¡Papa! Qué ricas son al horno.' },
+          { id: 'v9', name: 'BERENJENA', category: 'verduras', emoji: '🍆', healthy: true, soundText: '¡Berenjena! Muy nutritiva y violeta.' },
+          { id: 'v10', name: 'CEBOLLA', category: 'verduras', emoji: '🧅', healthy: true, soundText: '¡Cebolla! Da mucho sabor a la comida.' },
+
+          // Lácteos
+          { id: 'l1', name: 'LECHE', category: 'lacteos', emoji: '🥛', healthy: true, soundText: '¡Leche! Tiene calcio para los dientes y huesos.' },
+          { id: 'l2', name: 'YOGUR', category: 'lacteos', emoji: '🥛', healthy: true, soundText: '¡Yogur! Súper rico y bueno para la panza.' },
+          { id: 'l3', name: 'QUESO', category: 'lacteos', emoji: '🧀', healthy: true, soundText: '¡Queso! Nutritivo y muy sabroso.' },
+          { id: 'l4', name: 'MANTECA', category: 'lacteos', emoji: '🧈', healthy: false, soundText: 'Manteca. Tiene mucha grasa, comer solo un poquito.' },
+
+          // Cereales y Legumbres
+          { id: 'c1', name: 'PAN INTEGRAL', category: 'cereales', emoji: '🍞', healthy: true, soundText: '¡Pan integral! Tiene mucha fibra saludable.' },
+          { id: 'c2', name: 'AVENA', category: 'cereales', emoji: '🥣', healthy: true, soundText: '¡Avena! Súper energía para ir a jugar.' },
+          { id: 'c3', name: 'ARROZ', category: 'cereales', emoji: '🍚', healthy: true, soundText: '¡Arroz! Un cereal que nos da fuerzas.' },
+          { id: 'c4', name: 'LENTEJAS', category: 'cereales', emoji: '🍲', healthy: true, soundText: '¡Lentejas! Tienen mucho hierro.' },
+          { id: 'c5', name: 'FIDEOS', category: 'cereales', emoji: '🍝', healthy: true, soundText: '¡Fideos! Súper energía para correr.' },
+          { id: 'c6', name: 'GARBANZOS', category: 'cereales', emoji: '🌾', healthy: true, soundText: '¡Garbanzos! Súper legumbres ricas en proteínas.' },
+
+          // Proteínas (Carnes y Pescados)
+          { id: 'p1', name: 'POLLO', category: 'proteinas', emoji: '🍗', healthy: true, soundText: '¡Pollo! Nos ayuda a formar músculos fuertes.' },
+          { id: 'p2', name: 'PESCADO', category: 'proteinas', emoji: '🐟', healthy: true, soundText: '¡Pescado! Hace muy bien al cerebro.' },
+          { id: 'p3', name: 'HUEVO', category: 'proteinas', emoji: '🥚', healthy: true, soundText: '¡Huevo! Excelente proteína natural.' },
+          { id: 'p4', name: 'CARNE DE VACA', category: 'proteinas', emoji: '🥩', healthy: true, soundText: '¡Carne! Fuerza para todo el día.' },
+
+          // Bebidas
+          { id: 'b1', name: 'AGUA', category: 'bebidas', emoji: '💧', healthy: true, soundText: '¡Agua! Lo mejor del mundo para hidratarnos.' },
+          { id: 'b2', name: 'JUGO NATURAL', category: 'bebidas', emoji: '🍹', healthy: true, soundText: '¡Jugo exprimido! Rico y con vitaminas.' },
+          { id: 'b3', name: 'GASEOSA', category: 'bebidas', emoji: '🥤', healthy: false, soundText: 'Gaseosa. Tiene mucha azúcar, mejor tomar agua.' },
+
+          // Golosinas y Snacks
+          { id: 'g1', name: 'DONA', category: 'golosinas', emoji: '🍩', healthy: false, soundText: 'Dona. Muy dulce, para comer solo de vez en cuando.' },
+          { id: 'g2', name: 'CHOCOLATE', category: 'golosinas', emoji: '🍫', healthy: false, soundText: 'Chocolate. Un permitido muy rico, ¡pero sin abusar!' },
+          { id: 'g3', name: 'CHUPETÍN', category: 'golosinas', emoji: '🍭', healthy: false, soundText: 'Chupetín. ¡Cuidado con las caries!' },
+          { id: 'g4', name: 'PAPAS FRITAS', category: 'golosinas', emoji: '🍟', healthy: false, soundText: 'Papas fritas. Tienen mucha sal y aceite.' },
+          { id: 'g5', name: 'HELADO', category: 'golosinas', emoji: '🍦', healthy: false, soundText: 'Helado. Muy cremoso, pero con bastante azúcar.' },
+          { id: 'g6', name: 'ALFAJOR', category: 'golosinas', emoji: '🍪', healthy: false, soundText: 'Alfajor. Un gustito dulce para la merienda.' },
+          { id: 'g7', name: 'CARAMELOS', category: 'golosinas', emoji: '🍬', healthy: false, soundText: 'Caramelos. Tienen mucha azúcar pegajosa.' },
+          { id: 'g8', name: 'PIZZA', category: 'golosinas', emoji: '🍕', healthy: false, soundText: 'Pizza. Muy rica, pero mejor si tiene vegetales.' },
+          { id: 'g9', name: 'HAMBURGUESA', category: 'golosinas', emoji: '🍔', healthy: false, soundText: 'Hamburguesa. Para comer de vez en cuando en familia.' },
+          { id: 'g10', name: 'SALCHICHA', category: 'golosinas', emoji: '🌭', healthy: false, soundText: 'Salchicha. Es un embutido con mucha sal.' }
+        ];
+
+        // === CONFIGURACIÓN DE LOS 4 NIVELES ===
+        const LEVELS = [
+          { id: 1, name: 'DESAYUNO SALUDABLE', icon: <i className="fa-solid fa-mug-saucer text-amber-500 text-2xl"></i>, desc: '¡Vamos a preparar el desayuno más nutritivo para empezar el día con súper energía!' },
+          { id: 2, name: 'ALMUERZO SALUDABLE', icon: <i className="fa-solid fa-bowl-food text-emerald-500 text-2xl"></i>, desc: 'Es hora del almuerzo. Combina vegetales, proteínas y agua fresca.' },
+          { id: 3, name: 'MERIENDA SALUDABLE', icon: <i className="fa-solid fa-cookie-bite text-orange-500 text-2xl"></i>, desc: '¡Una merienda divertida! Elige lácteos, frutas y cereales.' },
+          { id: 4, name: 'CENA SALUDABLE', icon: <i className="fa-solid fa-moon text-indigo-500 text-2xl"></i>, desc: 'Una cena liviana y saludable para dormir felices y soñar lindo.' }
+        ];
+
+        function App() {
+          // --- ESTADOS NAVEGACIÓN ---
+          const [currentScreen, setCurrentScreen] = useState('welcome'); // welcome, play, teacher, goed, diploma
+          const [soundEnabled, setSoundEnabled] = useState(true);
+          const [foods, setFoods] = useState(INITIAL_FOOD_DATABASE);
+          const [customActivities, setCustomActivities] = useState([]);
+          const [studentName, setStudentName] = useState('PEQUEÑO GOURMET');
+          const [selectedGender, setSelectedGender] = useState('o'); // o / a / x
+
+          // --- ESTADOS JUEGO ---
+          const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
+          const [selectedCategory, setSelectedCategory] = useState('all');
+          const [plateFoods, setPlateFoods] = useState([]);
+          const [gameStats, setGameStats] = useState({
+            1: { foods: [], attempts: 0, time: 0 },
+            2: { foods: [], attempts: 0, time: 0 },
+            3: { foods: [], attempts: 0, time: 0 },
+            4: { foods: [], attempts: 0, time: 0 }
+          });
+          const [levelCompleted, setLevelCompleted] = useState(false);
+          const [earnedBadges, setEarnedBadges] = useState([]);
+          
+          // --- ESTADOS ASISTENTE IA ---
+          const [iaResponse, setIaResponse] = useState('');
+          const [iaExpression, setIaExpression] = useState('happy'); // happy, thinking, cheering
+
+          // --- TOAST NOTIFICATION ---
+          const [toast, setToast] = useState({ show: false, message: '', type: 'purple' });
+
+          // --- ESTADOS SEGURIDAD ADULTO ---
+          const [pinInput, setPinInput] = useState('');
+          const [showPinModal, setShowPinModal] = useState({ active: false, targetScreen: '' });
+          const [docenteError, setDocenteError] = useState('');
+          const [newFood, setNewFood] = useState({ name: '', category: 'frutas', emoji: '🍎', healthy: true, soundText: '' });
+          
+          // --- ESTADOS MODAL GOED & IMPRESIÓN ---
+          const [customSequence, setCustomSequence] = useState({ 
+            name: '', 
+            targetAge: '5', 
+            school: 'JARDÍN DE INFANTES DE LA CIUDAD',
+            author: 'DOCENTE ENLACE GOED',
+            description: '', 
+            activities: ''
+          });
+          const [activePrintSection, setActivePrintSection] = useState(null); // 'diploma', 'report', 'sequence'
+          const [sequenceToPrint, setSequenceToPrint] = useState(null);
+
+          // Cronómetro
+          const [seconds, setSeconds] = useState(0);
+          const timerRef = useRef(null);
+
+          // Temporizador de juego
+          useEffect(() => {
+            if (currentScreen === 'play' && !levelCompleted) {
+              timerRef.current = setInterval(() => {
+                setSeconds((prev) => prev + 1);
+              }, 1000);
+            } else {
+              clearInterval(timerRef.current);
+            }
+            return () => clearInterval(timerRef.current);
+          }, [currentScreen, levelCompleted, currentLevelIdx]);
+
+          // Autocerrar el Toast informativo
+          useEffect(() => {
+            if (toast.show) {
+              const timer = setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+              }, 4000);
+              return () => clearTimeout(timer);
+            }
+          }, [toast.show]);
+
+          // Bienvenida inicial por voz
+          useEffect(() => {
+            if (currentScreen === 'welcome') {
+              speak("¡Hola amiguito! Soy Súper Salud. ¡Vamos a construir platos deliciosos y saludables! Escribe tu nombre para empezar a jugar.");
+            }
+          }, [currentScreen]);
+
+          // Bienvenida del nivel activo
+          useEffect(() => {
+            if (currentScreen === 'play') {
+              setPlateFoods([]);
+              setLevelCompleted(false);
+              setSeconds(0);
+              const level = LEVELS[currentLevelIdx];
+              speak(`Nivel ${currentLevelIdx + 1}. Prepararemos un ${level.name}. ${level.desc}`);
+              setIaResponse(`¡Hola! Ayúdame a armar un plato riquísimo. Elige alimentos saludables y colócalos en el plato central.`);
+              setIaExpression('happy');
+            }
+          }, [currentLevelIdx, currentScreen]);
+
+          // === SÍNTESIS DE VOZ DE SÚPER SALUD ===
+          const speak = (text) => {
+            if (!soundEnabled) return;
+            if ('speechSynthesis' in window) {
+              try {
+                window.speechSynthesis.cancel(); 
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-AR';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.25; 
+                window.speechSynthesis.speak(utterance);
+              } catch (e) {
+                console.error("Error en SpeechSynthesis:", e);
+              }
+            }
+          };
+
+          // Añadir alimento al plato
+          const handleSelectFood = (food) => {
+            if (plateFoods.some(f => f.id === food.id)) {
+              speak(`¡El alimento ${food.name} ya está en el plato!`);
+              return;
+            }
+
+            speak(food.soundText);
+            const updatedPlate = [...plateFoods, food];
+            setPlateFoods(updatedPlate);
+
+            // Registro estadístico
+            setGameStats(prev => {
+              const currentLevelData = prev[currentLevelIdx + 1] || { foods: [], attempts: 0, time: 0 };
+              return {
+                ...prev,
+                [currentLevelIdx + 1]: {
+                  ...currentLevelData,
+                  foods: updatedPlate,
+                  attempts: currentLevelData.attempts + 1,
+                  time: seconds
+                }
+              };
+            });
+
+            // Reacción interactiva de Súper Salud
+            if (food.healthy) {
+              setIaExpression('cheering');
+              const positivePhrases = [
+                `¡Qué gran elección! El alimento ${food.name} es genial para crecer súper fuertes.`,
+                `¡Súper rico! ¿Sabías que ${food.name} te da energía para jugar sin parar?`,
+                `¡Me encanta! Es una opción muy sana para el cuerpo.`
+              ];
+              setIaResponse(positivePhrases[Math.floor(Math.random() * positivePhrases.length)]);
+            } else {
+              setIaExpression('thinking');
+              setIaResponse(`¡Oh! ${food.name} es rico, pero tiene mucha azúcar o grasas. Intentemos comerlo muy poquito y buscar algo más natural.`);
+            }
+          };
+
+          const handleRemoveFood = (foodId) => {
+            const updatedPlate = plateFoods.filter(f => f.id !== foodId);
+            setPlateFoods(updatedPlate);
+            speak("Quitamos ese alimento del plato.");
+          };
+
+          // Comprobar calidad nutritiva del plato
+          const handleCheckPlate = () => {
+            if (plateFoods.length < 3) {
+              speak("¡Tu plato todavía se ve un poco vacío! Agrega al menos 3 alimentos para hacerlo súper completo.");
+              setIaResponse("¿Te parece si agregamos algunos alimentos más para que sea un plato súper poderoso?");
+              setIaExpression('thinking');
+              return;
+            }
+
+            const healthyCount = plateFoods.filter(f => f.healthy).length;
+            const unhealthyCount = plateFoods.filter(f => !f.healthy).length;
+            
+            let feedbackText = "";
+            let levelBadges = [...earnedBadges];
+
+            if (healthyCount >= 3 && unhealthyCount === 0) {
+              setIaExpression('cheering');
+              feedbackText = `¡ESPECTACULAR! Armaste un plato 100% saludable. ¡Sos un verdadero campeón de la nutrición! ¿Por qué elegiste estas opciones? ¡Cuéntale a tu docente o compañeros!`;
+              
+              const badgeMap = {
+                0: '🥛 Maestro de los Desayunos',
+                1: '🥦 Campeón de los Almuerzos',
+                2: '🍎 Experto en Meriendas',
+                3: '🍽️ Súper Chef Saludable'
+              };
+              
+              if (!levelBadges.includes(badgeMap[currentLevelIdx])) {
+                levelBadges.push(badgeMap[currentLevelIdx]);
+              }
+            } else if (healthyCount >= 2) {
+              setIaExpression('happy');
+              feedbackText = `¡Muy buen trabajo! Tu plato tiene alimentos súper saludables. ¿Qué te parece si reemplazamos lo menos sano por una rica fruta o verdura la próxima vez? ¡Vamos excelente!`;
+              if (!levelBadges.includes('🥕 Amigo de las Verduras') && plateFoods.some(f => f.category === 'verduras')) {
+                levelBadges.push('🥕 Amigo de las Verduras');
+              }
+            } else {
+              setIaExpression('thinking');
+              feedbackText = `¡Tenemos una gran idea! Tu plato se ve rico, pero podemos hacerlo aún más poderoso si sumamos frutas, verduras o cereales. ¿Qué opción saludable te gustaría agregar?`;
+            }
+
+            setEarnedBadges(levelBadges);
+            setIaResponse(feedbackText);
+            speak(feedbackText);
+            setLevelCompleted(true);
+          };
+
+          const handleNextLevel = () => {
+            if (currentLevelIdx < LEVELS.length - 1) {
+              setCurrentLevelIdx(prev => prev + 1);
+            } else {
+              speak(`¡Felicitaciones ${studentName}! Completaste todos los desafíos de alimentación saludable. ¡Sos un súper experto!`);
+              setCurrentScreen('diploma');
+            }
+          };
+
+          const handlePinValidation = () => {
+            if (pinInput === '1234') {
+              setCurrentScreen(showPinModal.targetScreen);
+              setShowPinModal({ active: false, targetScreen: '' });
+              setPinInput('');
+              setDocenteError('');
+            } else {
+              setDocenteError('PIN Incorrecto. ¡El código de seguridad escolar es 1234!');
+            }
+          };
+
+          const triggerAdultArea = (target) => {
+            setShowPinModal({ active: true, targetScreen: target });
+          };
+
+          // Guardar secuencia didáctica de GOED
+          const handleSaveGoedActivity = (e) => {
+            e.preventDefault();
+            const newSequence = { 
+              ...customSequence, 
+              id: Date.now(), 
+              fecha_creacion: new Date().toLocaleDateString() 
+            };
+            
+            setCustomActivities([...customActivities, newSequence]);
+            setSequenceToPrint(newSequence);
+
+            setToast({
+              show: true,
+              message: "¡PLANIFICACIÓN PEDAGÓGICA CREADA EN MODO GOED!",
+              type: 'purple'
+            });
+            
+            speak("Secuencia pedagógica guardada con éxito. Ya podés imprimirla en PDF.");
+            
+            // Limpiar formulario manteniendo datos institucionales
+            setCustomSequence(prev => ({
+              ...prev,
+              name: '',
+              description: '',
+              activities: ''
+            }));
+          };
+
+          // Gatillar ventana de impresión
+          const printSection = (sectionType, data = null) => {
+            setActivePrintSection(sectionType);
+            if (sectionType === 'sequence' && data) {
+              setSequenceToPrint(data);
+            }
+            
+            setTimeout(() => {
+              window.print();
+            }, 250);
+          };
+
+          return (
+            <div className="min-h-screen bg-gradient-to-b from-sky-100 via-emerald-50 to-amber-50 font-sans text-slate-800 flex flex-col select-none">
+              
+              {/* ========================================== */}
+              {/* CABECERA PRINCIPAL ACCESIBLE (No se imprime) */}
+              {/* ========================================== */}
+              <header className="bg-white shadow-md border-b-4 border-emerald-400 py-3 px-6 flex justify-between items-center sticky top-0 z-40 print:hidden">
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-500 p-2.5 rounded-full shadow-md animate-bounce flex items-center justify-center">
+                    <i className="fa-solid fa-apple-whole text-white text-2xl"></i>
+                  </div>
+                  <div>
+                    <h1 className="text-xl md:text-2xl font-extrabold tracking-wide text-emerald-600 uppercase">
+                      EL DESAFÍO DEL PLATO SALUDABLE
+                    </h1>
+                    <p className="text-[10px] text-slate-500 font-bold tracking-wider uppercase hidden sm:block">
+                      GERENCIA OPERATIVA DE EDUCACIÓN DIGITAL (GOED) • GCABA
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled);
+                      if (!soundEnabled) speak("¡Sonido activado!");
+                    }}
+                    className={`p-2 rounded-full border-2 transition-all shadow flex items-center justify-center w-10 h-10 ${soundEnabled ? 'bg-green-500 text-white border-green-600' : 'bg-red-500 text-white border-red-600'}`}
+                    title="Voz de Súper Salud"
+                  >
+                    {soundEnabled ? <i className="fa-solid fa-volume-high text-sm"></i> : <i className="fa-solid fa-volume-xmark text-sm"></i>}
+                  </button>
+
+                  <button 
+                    onClick={() => triggerAdultArea('teacher')}
+                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 font-extrabold px-3 py-1.5 rounded-xl text-[10px] uppercase flex items-center gap-1 border-b-4 border-amber-600 shadow"
+                  >
+                    <i className="fa-solid fa-gear"></i> DOCENTE
+                  </button>
+                  
+                  <button 
+                    onClick={() => triggerAdultArea('goed')}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] uppercase flex items-center gap-1 border-b-4 border-purple-800 shadow"
+                  >
+                    <i className="fa-solid fa-graduation-cap"></i> MODO GOED
+                  </button>
+                </div>
+              </header>
+
+              {/* ========================================== */}
+              {/* CUERPO PRINCIPAL DEL JUEGO (No se imprime) */}
+              {/* ========================================== */}
+              <main className="flex-1 flex flex-col p-4 md:p-6 max-w-7xl mx-auto w-full print:hidden">
+                
+                {/* --- PANTALLA 1: BIENVENIDA --- */}
+                {currentScreen === 'welcome' && (
+                  <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 py-6">
+                    
+                    {/* Personaje Súper Salud Grande */}
+                    <div className="w-full md:w-1/2 flex flex-col items-center text-center bg-white p-8 rounded-3xl border-4 border-emerald-400 shadow-2xl relative transform hover:scale-105 transition-transform duration-300">
+                      <span className="absolute -top-6 -right-6 text-6xl animate-pulse">✨</span>
+                      
+                      <div className="w-48 h-48 bg-yellow-100 rounded-full flex items-center justify-center border-4 border-dashed border-emerald-500 shadow-inner relative overflow-hidden mb-6">
+                        <svg viewBox="0 0 100 100" className="w-36 h-36">
+                          <circle cx="50" cy="55" r="30" fill="#EF4444" />
+                          <path d="M 20 60 L 5 80 L 15 90 L 50 75 L 85 90 L 95 80 L 80 60 Z" fill="#10B981" opacity="0.9" />
+                          <circle cx="40" cy="45" r="8" fill="white" />
+                          <circle cx="40" cy="45" r="4" fill="#1E293B" />
+                          <circle cx="60" cy="45" r="8" fill="white" />
+                          <circle cx="60" cy="45" r="4" fill="#1E293B" />
+                          <circle cx="32" cy="55" r="4" fill="#F43F5E" opacity="0.6" />
+                          <circle cx="68" cy="55" r="4" fill="#F43F5E" opacity="0.6" />
+                          <path d="M 38 58 Q 50 70 62 58" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" fill="none" />
+                          <path d="M 50 25 Q 55 10 65 15 Q 55 25 50 25" fill="#10B981" />
+                          <rect x="48" y="22" width="4" height="8" fill="#78350F" />
+                        </svg>
+                      </div>
+
+                      <div className="bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-200 mb-6">
+                        <p className="text-lg md:text-xl font-black text-slate-800 uppercase leading-relaxed">
+                          "¡HOLA! SOY <span className="text-emerald-600">SÚPER SALUD</span>. ¡VAMOS A CONSTRUIR JUNTOS PLATOS MUY SANOS!"
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Formulario Estudiante */}
+                    <div className="w-full md:w-1/2 bg-white p-8 rounded-3xl border-4 border-amber-300 shadow-2xl flex flex-col justify-between">
+                      <div>
+                        <span className="bg-amber-100 text-amber-800 font-extrabold px-4 py-1.5 rounded-full text-xs uppercase self-start mb-4 inline-block">
+                          📝 BIENVENIDA A NIVEL INICIAL
+                        </span>
+                        
+                        <h3 className="text-2xl font-black text-slate-800 mb-6 uppercase">
+                          ¿CÓMO TE LLAMAS?
+                        </h3>
+
+                        <div className="mb-6">
+                          <input 
+                            type="text" 
+                            value={studentName}
+                            onChange={(e) => setStudentName(e.target.value.toUpperCase())}
+                            placeholder="ESCRIBE TU NOMBRE" 
+                            className="w-full text-center text-xl font-black uppercase p-4 border-4 border-amber-400 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-200 bg-amber-50 text-amber-900 placeholder-amber-300 tracking-wider"
+                          />
+                        </div>
+
+                        <p className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">QUIERO QUE ME DIGAN:</p>
+                        <div className="grid grid-cols-3 gap-3 mb-6">
+                          <button 
+                            onClick={() => setSelectedGender('o')}
+                            className={`p-3 rounded-xl border-2 font-extrabold text-xs transition-all uppercase ${selectedGender === 'o' ? 'bg-amber-400 border-amber-500 text-slate-900 shadow-inner' : 'bg-slate-100 border-slate-300 text-slate-600'}`}
+                          >
+                            👦 COCINERO
+                          </button>
+                          <button 
+                            onClick={() => setSelectedGender('a')}
+                            className={`p-3 rounded-xl border-2 font-extrabold text-xs transition-all uppercase ${selectedGender === 'a' ? 'bg-amber-400 border-amber-500 text-slate-900 shadow-inner' : 'bg-slate-100 border-slate-300 text-slate-600'}`}
+                          >
+                            👧 COCINERA
+                          </button>
+                          <button 
+                            onClick={() => setSelectedGender('x')}
+                            className={`p-3 rounded-xl border-2 font-extrabold text-xs transition-all uppercase ${selectedGender === 'x' ? 'bg-amber-400 border-amber-500 text-slate-900 shadow-inner' : 'bg-slate-100 border-slate-300 text-slate-600'}`}
+                          >
+                            🌟 COCINERE
+                          </button>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          if(!studentName.trim()) {
+                            speak("Por favor, ingresá tu nombre para empezar a jugar.");
+                            return;
+                          }
+                          speak(`¡Excelente! Bienvenido ${studentName}. Vamos a preparar tu Desayuno.`);
+                          setCurrentScreen('play');
+                        }}
+                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-2xl py-4 rounded-2xl shadow-xl hover:translate-y-[-2px] border-b-8 border-emerald-700 transition-all uppercase tracking-wider flex items-center justify-center gap-2 animate-pulse"
+                      >
+                        <i className="fa-solid fa-play"></i> ¡EMPEZAR A JUGAR!
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* --- PANTALLA 2: JUEGO ACTIVO --- */}
+                {currentScreen === 'play' && (
+                  <div className="flex-1 flex flex-col gap-6">
+                    
+                    {/* Niveles / Progreso */}
+                    <div className="bg-white p-4 rounded-2xl border-4 border-slate-200 shadow flex justify-between items-center overflow-x-auto gap-4">
+                      {LEVELS.map((lvl, idx) => {
+                        const isActive = idx === currentLevelIdx;
+                        const isPassed = idx < currentLevelIdx;
+                        return (
+                          <div 
+                            key={lvl.id} 
+                            className={`flex-1 min-w-[200px] flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                              isActive ? 'bg-yellow-100 border-yellow-500 scale-105' : 
+                              isPassed ? 'bg-green-100 border-green-500 opacity-80' : 'bg-slate-50 border-slate-200 opacity-60'
+                            }`}
+                          >
+                            <div className="p-2 bg-white rounded-lg shadow-sm flex items-center justify-center">
+                              {lvl.icon}
+                            </div>
+                            <div className="text-left">
+                              <span className="text-[10px] font-black text-slate-500 uppercase">NIVEL {lvl.id}</span>
+                              <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-tight">{lvl.name}</h4>
+                            </div>
+                            {isPassed && <span className="ml-auto text-lg text-green-600">✅</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Layout Central */}
+                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      
+                      {/* Alimentos (Izquierda) */}
+                      <div className="lg:col-span-7 bg-white p-6 rounded-3xl border-4 border-slate-200 shadow-xl flex flex-col">
+                        
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          <button 
+                            onClick={() => setSelectedCategory('all')}
+                            className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${
+                              selectedCategory === 'all' ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                          >
+                            🌟 TODOS ({foods.length})
+                          </button>
+                          {Object.entries(CATEGORIES).map(([key, value]) => (
+                            <button 
+                              key={key}
+                              onClick={() => setSelectedCategory(value.id)}
+                              className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${value.color} ${
+                                selectedCategory === value.id ? 'brightness-95 ring-2 ring-slate-300 scale-95' : ''
+                              }`}
+                            >
+                              {value.icon} {value.name}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex-1 bg-slate-50 rounded-2xl border-4 border-dashed border-slate-200 p-4 overflow-y-auto max-h-[440px]">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                            {foods
+                              .filter(f => selectedCategory === 'all' || f.category === selectedCategory)
+                              .map(food => {
+                                const inPlate = plateFoods.some(p => p.id === food.id);
+                                return (
+                                  <div 
+                                    key={food.id}
+                                    onClick={() => !inPlate && handleSelectFood(food)}
+                                    className={`relative bg-white rounded-2xl p-3 border-4 flex flex-col items-center justify-between cursor-pointer transition-all hover:scale-105 active:scale-95 shadow food-bounce ${
+                                      inPlate ? 'opacity-30 border-slate-300 cursor-not-allowed bg-slate-100' : 
+                                      food.healthy ? 'border-emerald-400' : 'border-amber-400'
+                                    }`}
+                                  >
+                                    <span className={`absolute top-1.5 right-1.5 w-3 h-3 rounded-full ${food.healthy ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                    <span className="text-4xl my-2 block select-none transform hover:rotate-12 transition-transform">{food.emoji}</span>
+                                    <span className="text-[10px] font-black text-center text-slate-800 break-words w-full uppercase tracking-wider">{food.name}</span>
+                                    <button className={`mt-2 w-full py-1 text-[9px] font-black rounded-lg uppercase ${
+                                      inPlate ? 'bg-slate-200 text-slate-400' : 'bg-emerald-100 text-emerald-800'
+                                    }`}>
+                                      {inPlate ? 'PUESTO' : '¡SUMAR!'}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Plato e IA (Derecha) */}
+                      <div className="lg:col-span-5 flex flex-col gap-6">
+                        
+                        <div className="bg-white p-6 rounded-3xl border-4 border-blue-400 shadow-xl flex flex-col items-center justify-center relative min-h-[340px]">
+                          
+                          <span className="absolute top-3 left-4 bg-blue-100 text-blue-800 font-extrabold px-3 py-1 rounded-full text-[10px] uppercase">
+                            🍽️ MI PLATO SALUDABLE
+                          </span>
+
+                          <span className="absolute top-3 right-4 bg-slate-100 text-slate-600 font-extrabold px-3 py-1 rounded-full text-xs">
+                            ⏱️ {seconds}s
+                          </span>
+
+                          <div className="relative w-64 h-64 sm:w-72 sm:h-72 bg-slate-50 rounded-full border-8 border-blue-200 shadow-inner flex items-center justify-center my-6">
+                            {plateFoods.length === 0 ? (
+                              <div className="text-center p-6 select-none">
+                                <span className="text-4xl block animate-bounce mb-2">😋</span>
+                                <p className="text-sm font-black text-blue-500 uppercase leading-snug">¡PLATO VACÍO!</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Toca alimentos para agregarlos aquí.</p>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-4 grid grid-cols-3 gap-2 items-center justify-center content-center">
+                                {plateFoods.map(food => (
+                                  <div 
+                                    key={food.id}
+                                    className="bg-white p-1.5 rounded-xl border-2 border-blue-300 shadow-sm flex flex-col items-center justify-center relative hover:scale-105 transition-transform"
+                                  >
+                                    <button 
+                                      onClick={() => handleRemoveFood(food.id)}
+                                      className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full flex items-center justify-center w-5 h-5 border border-white"
+                                    >
+                                      <i className="fa-solid fa-trash text-[8px]"></i>
+                                    </button>
+                                    <span className="text-2xl">{food.emoji}</span>
+                                    <span className="text-[8px] font-black text-center text-slate-700 truncate w-full uppercase">{food.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="w-full flex gap-3">
+                            <button 
+                              onClick={() => {
+                                setPlateFoods([]);
+                                speak("Plato vaciado. ¡Vamos a empezar de nuevo!");
+                              }}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-black px-4 py-3 rounded-2xl text-xs border-b-4 border-slate-300 uppercase flex items-center gap-1"
+                            >
+                              <i className="fa-solid fa-arrows-rotate"></i> REINICIAR
+                            </button>
+                            <button 
+                              onClick={handleCheckPlate}
+                              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-black px-6 py-3 rounded-2xl text-base border-b-4 border-green-700 uppercase flex items-center justify-center gap-1.5 animate-pulse"
+                            >
+                              <i className="fa-solid fa-check"></i> ¡PROBAR PLATO!
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Súper Salud Feedback */}
+                        <div className="bg-emerald-500 p-5 rounded-3xl border-4 border-emerald-600 text-white shadow-xl flex items-start gap-4">
+                          <div className="w-16 h-16 bg-yellow-100 rounded-full flex-shrink-0 flex items-center justify-center border-2 border-emerald-300 shadow relative overflow-hidden">
+                            <svg viewBox="0 0 100 100" className="w-12 h-12">
+                              <circle cx="50" cy="55" r="30" fill="#EF4444" />
+                              {iaExpression === 'happy' && (
+                                <>
+                                  <circle cx="40" cy="45" r="7" fill="white" />
+                                  <circle cx="40" cy="45" r="3" fill="#1E293B" />
+                                  <circle cx="60" cy="45" r="7" fill="white" />
+                                  <circle cx="60" cy="45" r="3" fill="#1E293B" />
+                                  <path d="M 38 58 Q 50 68 62 58" stroke="#1E293B" strokeWidth="4" strokeLinecap="round" fill="none" />
+                                </>
+                              )}
+                              {iaExpression === 'cheering' && (
+                                <>
+                                  <path d="M 35 40 Q 40 35 45 40" stroke="#1E293B" strokeWidth="3" strokeLinecap="round" fill="none" />
+                                  <path d="M 55 40 Q 60 35 65 40" stroke="#1E293B" strokeWidth="3" strokeLinecap="round" fill="none" />
+                                  <circle cx="50" cy="62" r="8" fill="#1E293B" />
+                                </>
+                              )}
+                              {iaExpression === 'thinking' && (
+                                <>
+                                  <circle cx="40" cy="45" r="7" fill="white" />
+                                  <circle cx="40" cy="45" r="3" fill="#1E293B" />
+                                  <circle cx="60" cy="45" r="7" fill="white" />
+                                  <circle cx="60" cy="45" r="3" fill="#1E293B" />
+                                  <path d="M 40 60 Q 50 55 60 60" stroke="#1E293B" strokeWidth="3" strokeLinecap="round" fill="none" />
+                                </>
+                              )}
+                              <circle cx="32" cy="55" r="4" fill="#F43F5E" opacity="0.6" />
+                              <circle cx="68" cy="55" r="4" fill="#F43F5E" opacity="0.6" />
+                              <path d="M 50 25 Q 55 10 65 15 Q 55 25 50 25" fill="#10B981" />
+                            </svg>
+                          </div>
+
+                          <div className="flex-1">
+                            <span className="bg-yellow-400 text-yellow-950 font-black px-2 py-0.5 rounded text-[8px] uppercase inline-block mb-1 tracking-wider">
+                              SÚPER SALUD DICE:
+                            </span>
+                            <p className="text-xs font-black leading-relaxed uppercase tracking-wide">
+                              {iaResponse}
+                            </p>
+                          </div>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    {/* Pop-up de Nivel Completado */}
+                    {levelCompleted && (
+                      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl border-8 border-yellow-400 max-w-lg w-full p-8 text-center shadow-2xl">
+                          <span className="text-5xl block mb-3 animate-bounce">🏆</span>
+                          <h3 className="text-2xl font-black text-slate-800 uppercase mb-1">¡EXCELENTE TRABAJO!</h3>
+                          <p className="text-sm font-extrabold text-emerald-600 uppercase mb-4">NIVEL {currentLevelIdx + 1} COMPLETADO</p>
+
+                          <div className="bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-200 mb-6">
+                            <p className="text-[10px] font-black text-slate-500 uppercase mb-2">MEDALLA GANADA:</p>
+                            <span className="bg-emerald-500 text-white font-black px-4 py-2 rounded-xl text-sm uppercase shadow inline-block">
+                              {currentLevelIdx === 0 && '🥛 Maestro de los Desayunos'}
+                              {currentLevelIdx === 1 && '🥦 Campeón de los Almuerzos'}
+                              {currentLevelIdx === 2 && '🍎 Experto en Meriendas'}
+                              {currentLevelIdx === 3 && '🍽️ Súper Chef Saludable'}
+                            </span>
+                          </div>
+
+                          <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-200 text-left mb-6">
+                            <h4 className="text-[10px] font-black text-blue-800 uppercase mb-2 flex items-center gap-1.5">
+                              <i className="fa-solid fa-wand-magic-sparkles"></i> PREGUNTAS DE NUESTRA IA PARA REFLEXIONAR JUNTOS:
+                            </h4>
+                            <ul className="list-disc pl-4 text-[10px] font-bold uppercase text-slate-600 space-y-1.5">
+                              <li>¿Por qué elegiste combinar estos alimentos?</li>
+                              <li>¿Cuál de los alimentos que pusiste es tu preferido en casa?</li>
+                              <li>¿Qué bebida te parece más saludable para acompañar esta comida?</li>
+                            </ul>
+                          </div>
+
+                          <button 
+                            onClick={handleNextLevel}
+                            className="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-black text-xl py-3.5 rounded-2xl border-b-6 border-yellow-600 transition-all uppercase tracking-wide flex items-center justify-center gap-1"
+                          >
+                            {currentLevelIdx < LEVELS.length - 1 ? 'Siguiente Desafío' : 'Ver Mi Gran Diploma'} <i className="fa-solid fa-chevron-right"></i>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+                {/* --- PANTALLA 3: MODO DOCENTE (GESTIÓN Y EVALUACIÓN) --- */}
+                {currentScreen === 'teacher' && (
+                  <div className="flex-1 bg-white p-6 rounded-3xl border-4 border-amber-400 shadow-xl flex flex-col gap-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-slate-100 pb-4 gap-4">
+                      <div>
+                        <h2 className="text-2xl font-black text-slate-800 uppercase flex items-center gap-2">
+                          <i className="fa-solid fa-gear text-amber-500"></i> MODO DOCENTE - EVALUACIÓN Y GESTIÓN
+                        </h2>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Revisá estadísticas individuales del alumno activo o gestioná la base de datos de alimentos.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setCurrentScreen('play')}
+                        className="bg-slate-800 text-white font-extrabold px-5 py-2 rounded-2xl uppercase border-b-4 border-slate-950 text-xs"
+                      >
+                        Volver al Juego
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      
+                      {/* Cargar Alimentos */}
+                      <div className="lg:col-span-5 bg-amber-50 p-6 rounded-2xl border-2 border-amber-200">
+                        <h3 className="text-sm font-black text-amber-900 uppercase mb-4 flex items-center gap-1.5">
+                          <i className="fa-solid fa-plus"></i> Agregar Alimento al Juego
+                        </h3>
+                        
+                        <form onSubmit={handleCreateFood} className="flex flex-col gap-3">
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Nombre (En Mayúsculas)</label>
+                            <input 
+                              type="text" 
+                              required
+                              value={newFood.name}
+                              onChange={(e) => setNewFood({...newFood, name: e.target.value.toUpperCase()})}
+                              placeholder="Ej. MANGO" 
+                              className="w-full p-2 rounded-xl border border-slate-300 text-xs font-bold uppercase focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Categoría</label>
+                              <select 
+                                value={newFood.category}
+                                onChange={(e) => setNewFood({...newFood, category: e.target.value})}
+                                className="w-full p-2 rounded-xl border border-slate-300 text-xs font-bold uppercase"
+                              >
+                                {Object.entries(CATEGORIES).map(([key, val]) => (
+                                  <option key={key} value={val.id}>{val.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Emoji / Icono</label>
+                              <input 
+                                type="text" 
+                                required
+                                value={newFood.emoji}
+                                onChange={(e) => setNewFood({...newFood, emoji: e.target.value})}
+                                placeholder="🥭" 
+                                className="w-full p-2 rounded-xl border border-slate-300 text-xs font-bold text-center"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">¿Es Saludable?</label>
+                            <div className="flex gap-4">
+                              <label className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-700">
+                                <input 
+                                  type="radio" 
+                                  checked={newFood.healthy === true}
+                                  onChange={() => setNewFood({...newFood, healthy: true})}
+                                /> SÍ (NUTRITIVO)
+                              </label>
+                              <label className="flex items-center gap-2 text-xs font-bold uppercase text-rose-700">
+                                <input 
+                                  type="radio" 
+                                  checked={newFood.healthy === false}
+                                  onChange={() => setNewFood({...newFood, healthy: false})}
+                                /> NO (OCASIONAL)
+                              </label>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Voz IA de Alimento</label>
+                            <textarea 
+                              required
+                              value={newFood.soundText}
+                              onChange={(e) => setNewFood({...newFood, soundText: e.target.value})}
+                              placeholder="Ej. ¡Qué rico! Mango fresco con vitaminas." 
+                              className="w-full p-2 rounded-xl border border-slate-300 text-xs font-bold uppercase focus:outline-none"
+                              rows="2"
+                            />
+                          </div>
+
+                          <button 
+                            type="submit"
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-2.5 rounded-xl text-xs uppercase"
+                          >
+                            Guardar Alimento
+                          </button>
+                        </form>
+                      </div>
+
+                      {/* Lista Alimentos */}
+                      <div className="lg:col-span-7 flex flex-col">
+                        <h3 className="text-sm font-black text-slate-800 uppercase mb-4">Banco de Alimentos ({foods.length})</h3>
+                        <div className="border border-slate-200 rounded-2xl overflow-y-auto max-h-[340px] p-2 bg-slate-50">
+                          <div className="space-y-2">
+                            {foods.map(food => (
+                              <div key={food.id} className="bg-white p-2.5 rounded-xl border flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="text-2xl">{food.emoji}</span>
+                                  <div>
+                                    <div className="flex items-center gap-1.5">
+                                      <h4 className="font-black text-xs uppercase text-slate-800">{food.name}</h4>
+                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase text-white ${food.healthy ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                                        {food.healthy ? 'Saludable' : 'Ocasional'}
+                                      </span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase">{CATEGORIES[food.category?.toUpperCase()]?.name || food.category}</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <button onClick={() => speak(food.soundText)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600"><i className="fa-solid fa-volume-high text-xs"></i></button>
+                                  <button onClick={() => handleDeleteFood(food.id)} className="p-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-600"><i className="fa-solid fa-trash-can text-xs"></i></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Reporte Docente */}
+                    <div className="mt-4 bg-slate-50 p-6 rounded-2xl border-2 border-slate-200">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <div>
+                          <h3 className="text-lg font-black text-slate-800 uppercase flex items-center gap-1.5">
+                            <i className="fa-solid fa-file-invoice text-emerald-500"></i> Informe de Desempeño Escolar
+                          </h3>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Registro acumulativo del progreso y elecciones del niño.</p>
+                        </div>
+                        <button 
+                          onClick={() => printSection('report')}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white font-black px-4 py-2 rounded-xl border-b-4 border-emerald-700 uppercase text-xs flex items-center gap-1.5"
+                        >
+                          <i className="fa-solid fa-print"></i> Exportar Informe / PDF
+                        </button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-slate-200">
+                        <div className="grid grid-cols-2 gap-4 border-b-2 border-slate-100 pb-3 mb-3">
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase">Estudiante Activo:</p>
+                            <p className="text-sm font-black text-slate-800 uppercase">{studentName} (5 AÑOS - NIVEL INICIAL)</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase">Fecha:</p>
+                            <p className="text-sm font-black text-slate-800 uppercase">{new Date().toLocaleDateString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {LEVELS.map(lvl => {
+                            const stat = gameStats[lvl.id] || { foods: [], attempts: 0, time: 0 };
+                            return (
+                              <div key={lvl.id} className="border-b last:border-0 pb-3 last:pb-0">
+                                <div className="flex justify-between items-center mb-1">
+                                  <h4 className="font-extrabold text-xs uppercase text-slate-700">{lvl.name}</h4>
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase">Tiempo: {stat.time}s | Intentos: {stat.attempts}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                  <span className="text-[9px] font-bold uppercase text-slate-400">Elecciones:</span>
+                                  {stat.foods.length === 0 ? (
+                                    <span className="text-[9px] text-rose-500 font-black uppercase">Pendiente</span>
+                                  ) : (
+                                    stat.foods.map(f => (
+                                      <span key={f.id} className={`px-2 py-0.5 border rounded text-[9px] font-black uppercase ${f.healthy ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                        {f.emoji} {f.name}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* --- PANTALLA 4: MODO GOED (GERENCIA OPERATIVA DE EDUCACIÓN DIGITAL) --- */}
+                {currentScreen === 'goed' && (
+                  <div className="flex-1 bg-white p-6 rounded-3xl border-4 border-purple-500 shadow-xl flex flex-col gap-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-slate-100 pb-4 gap-4">
+                      <div>
+                        <h2 className="text-2xl font-black text-slate-800 uppercase flex items-center gap-1.5">
+                          <i className="fa-solid fa-graduation-cap text-purple-600"></i> GERENCIA OPERATIVA DE EDUCACIÓN DIGITAL - GOED
+                        </h2>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Diseñá, planificá y exportá en PDF secuencias pedagógicas de innovación y alimentación saludable.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setCurrentScreen('play')}
+                        className="bg-slate-800 text-white font-extrabold px-5 py-2 rounded-2xl uppercase border-b-4 border-slate-950 text-xs"
+                      >
+                        Volver al Juego
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      
+                      {/* Diseñador */}
+                      <div className="lg:col-span-6 bg-purple-50 p-6 rounded-2xl border-2 border-purple-200">
+                        <h3 className="text-sm font-black text-purple-900 uppercase mb-4 flex items-center gap-1.5">
+                          <i className="fa-solid fa-pen-to-square"></i> Crear Nueva Secuencia Pedagógica
+                        </h3>
+
+                        <form onSubmit={handleSaveGoedActivity} className="space-y-4">
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Nombre de la Secuencia Didáctica</label>
+                            <input 
+                              type="text" 
+                              required
+                              value={customSequence.name}
+                              onChange={(e) => setCustomSequence({...customSequence, name: e.target.value.toUpperCase()})}
+                              placeholder="Ej. JUGAMOS CON LOS VEGETALES DE LA HUERTA" 
+                              className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Establecimiento Escolar</label>
+                              <input 
+                                type="text"
+                                required
+                                value={customSequence.school}
+                                onChange={(e) => setCustomSequence({...customSequence, school: e.target.value.toUpperCase()})}
+                                className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Docente de Sala / Facilitador</label>
+                              <input 
+                                type="text"
+                                required
+                                value={customSequence.author}
+                                onChange={(e) => setCustomSequence({...customSequence, author: e.target.value.toUpperCase()})}
+                                className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Destinatarios</label>
+                              <select 
+                                value={customSequence.targetAge}
+                                onChange={(e) => setCustomSequence({...customSequence, targetAge: e.target.value})}
+                                className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase"
+                              >
+                                <option value="3">SALA DE 3 AÑOS</option>
+                                <option value="4">SALA DE 4 AÑOS</option>
+                                <option value="5">SALA DE 5 AÑOS</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Dispositivo Escolar</label>
+                              <select className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase">
+                                <option>PIZARRA DIGITAL INTERACTIVA (PDI)</option>
+                                <option>TABLETS COLECTIVAS</option>
+                                <option>NETBOOKS ESCOLARES</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Propósitos Pedagógicos y Objetivos de Aprendizaje</label>
+                            <textarea 
+                              required
+                              value={customSequence.description}
+                              onChange={(e) => setCustomSequence({...customSequence, description: e.target.value})}
+                              placeholder="Ej. Fomentar la oralidad mediante el debate de elecciones saludables y el reconocimiento visual de lácteos y carnes." 
+                              className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase focus:outline-none"
+                              rows="2"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase mb-1">Actividades de Inicio, Desarrollo y Cierre</label>
+                            <textarea 
+                              required
+                              value={customSequence.activities}
+                              onChange={(e) => setCustomSequence({...customSequence, activities: e.target.value})}
+                              placeholder="Ej. Inicio: Diálogo con Súper Salud. Desarrollo: Elección de comidas en parejas con la PDI. Cierre: Confección del plato ideal en cartulina." 
+                              className="w-full p-2.5 rounded-xl border border-purple-300 text-xs font-bold uppercase focus:outline-none"
+                              rows="2"
+                            />
+                          </div>
+
+                          <button 
+                            type="submit"
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3 rounded-xl border-b-4 border-purple-800 uppercase text-xs tracking-wider flex items-center justify-center gap-1.5"
+                          >
+                            <i className="fa-solid fa-file-circle-plus"></i> Guardar Planificación GOED
+                          </button>
+                        </form>
+                      </div>
+
+                      {/* Repositorio Planificaciones */}
+                      <div className="lg:col-span-6 flex flex-col gap-4">
+                        <div className="bg-slate-50 p-6 rounded-2xl border-2 border-slate-200 flex-1">
+                          <h3 className="text-xs font-black text-slate-800 uppercase mb-3 flex items-center gap-1.5">
+                            <i className="fa-solid fa-folder-open text-purple-600"></i> Planificaciones de esta Sesión ({customActivities.length})
+                          </h3>
+                          
+                          {customActivities.length === 0 ? (
+                            <div className="text-center py-10 text-slate-400 font-bold uppercase text-xs border-2 border-dashed border-slate-200 rounded-xl">
+                              No hay planificaciones didácticas creadas. Completá el formulario escolar.
+                            </div>
+                          ) : (
+                            <div className="space-y-3 overflow-y-auto max-h-[420px]">
+                              {customActivities.map((act) => (
+                                <div key={act.id} className="bg-white p-4 rounded-xl border-2 border-purple-200 shadow-sm flex flex-col gap-3">
+                                  <div>
+                                    <div className="flex justify-between items-start">
+                                      <h4 className="font-black text-xs text-purple-950 uppercase">{act.name}</h4>
+                                      <span className="text-[8px] font-black bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full uppercase">SALA DE {act.targetAge} AÑOS</span>
+                                    </div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Escuela: {act.school} | Creador: {act.author}</p>
+                                    <p className="text-[11px] text-slate-600 font-semibold uppercase mt-2 line-clamp-2">{act.description}</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={() => printSection('sequence', act)}
+                                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-black py-2 rounded-lg text-[10px] uppercase flex items-center justify-center gap-1.5 border-b-2 border-purple-850"
+                                    >
+                                      <i className="fa-solid fa-file-pdf"></i> Imprimir / PDF
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setCustomActivities(customActivities.filter(a => a.id !== act.id));
+                                        speak("Planificación eliminada.");
+                                      }}
+                                      className="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg text-xs"
+                                    >
+                                      <i className="fa-solid fa-trash-can"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-purple-50 p-5 rounded-2xl border border-purple-200 text-xs font-semibold text-purple-900 uppercase space-y-2">
+                          <h4 className="font-black text-sm text-purple-950 flex items-center gap-1">
+                            <i className="fa-solid fa-lightbulb"></i> RECURSOS PEDAGÓGICOS (GOED):
+                          </h4>
+                          <p>✓ **Ronda Interactiva:** Proyectá el juego en la Pizarra Digital de la sala y asigá roles para tomar elecciones colectivas.</p>
+                          <p>✓ **Pensamiento Computacional:** Usá la base de datos de alimentos para que los niños clasifiquen y organicen patrones de nutrición en papel.</p>
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+                )}
+
+              </main>
+
+              {/* ========================================== */}
+              {/* ELEMENTOS EXCLUSIVOS DE IMPRESIÓN (A4 PDF) */}
+              {/* ========================================== */}
+              
+              {/* 1. DIPLOMA A4 */}
+              {activePrintSection === 'diploma' && (
+                <div className="hidden print:block p-12 text-center bg-white border-[16px] border-amber-400 rounded-3xl max-w-4xl mx-auto my-0">
+                  <h2 className="text-emerald-600 font-black text-4xl uppercase tracking-widest mb-1 font-kids">DIPLOMA DE HONOR</h2>
+                  <p className="text-slate-500 font-extrabold text-xs uppercase tracking-wider mb-6">EL DESAFÍO DEL PLATO SALUDABLE • NIVEL INICIAL</p>
+                  <p className="text-slate-600 font-bold uppercase text-xs mb-3">SE LE OTORGA CON MUCHA ALEGRÍA A:</p>
+                  <h1 className="text-4xl font-black text-slate-800 uppercase tracking-wide border-b-4 border-dashed border-amber-300 pb-2 mb-6 inline-block font-kids">{studentName}</h1>
+                  <p className="text-slate-600 font-black uppercase text-sm max-w-lg mx-auto leading-relaxed mb-6">
+                    POR COMPLETAR DE MANERA EXCELENTE TODOS LOS DESAFÍOS DE ALIMENTACIÓN Y DEMOSTRAR SER UN/A <strong className="text-emerald-600">SÚPER EXPERTO/A EN COMIDA SALUDABLE</strong>.
+                  </p>
+                  <div className="flex justify-around items-end pt-12 border-t-2 border-slate-200 mt-12">
+                    <div className="text-center">
+                      <span className="text-3xl">🍎</span>
+                      <p className="text-[10px] font-black text-slate-500 uppercase mt-2">SÚPER SALUD</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-40 h-8 border-b-2 border-slate-300 mb-1"></div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase">FIRMA DE LA ESCUELA</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. REPORTE EVALUATIVO A4 */}
+              {activePrintSection === 'report' && (
+                <div className="hidden print:block p-8 bg-white max-w-4xl mx-auto border-2 border-slate-300 rounded-xl">
+                  <div className="flex justify-between items-center border-b-4 border-emerald-400 pb-3 mb-5">
+                    <div>
+                      <h1 className="text-xl font-black text-slate-800 uppercase">INFORME DE DESEMPEÑO INDIVIDUAL</h1>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">PROYECTO: EL DESAFÍO DEL PLATO SALUDABLE • GOED</p>
+                    </div>
+                    <span className="text-3xl">🍎</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 border-b-2 border-slate-100 pb-3 mb-4">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase">Estudiante / Sala:</p>
+                      <p className="text-sm font-black text-slate-800 uppercase">{studentName} (5 AÑOS - SALA DE INFANTES)</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase">Fecha:</p>
+                      <p className="text-sm font-black text-slate-800 uppercase">{new Date().toLocaleDateString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {LEVELS.map(lvl => {
+                      const stat = gameStats[lvl.id] || { foods: [], attempts: 0, time: 0 };
+                      return (
+                        <div key={lvl.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <h4 className="font-extrabold text-xs uppercase text-slate-800">{lvl.name}</h4>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase">Tiempo: {stat.time}s | Intentos: {stat.attempts}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 items-center">
+                            <span className="text-[9px] font-bold uppercase text-slate-400">Elecciones:</span>
+                            {stat.foods.length === 0 ? (
+                              <span className="text-[9px] text-rose-500 font-black uppercase">Pendiente</span>
+                            ) : (
+                              stat.foods.map(f => (
+                                <span key={f.id} className="px-2 py-0.5 border border-slate-200 rounded text-[9px] font-black uppercase">
+                                  {f.emoji} {f.name} ({f.healthy ? 'Saludable' : 'Ocasional'})
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-8 pt-4 border-t-2 border-slate-200 bg-slate-50 p-4 rounded-xl">
+                    <h4 className="text-xs font-black text-slate-800 uppercase mb-2">Observaciones Pedagógicas:</h4>
+                    <p className="text-xs text-slate-600 uppercase leading-relaxed text-justify">
+                      El alumno {studentName} muestra participación activa en el entorno digital adaptado del juego. Al clasificar alimentos en los desafíos de almuerzo y cena, prioriza el reconocimiento de hábitos de hidratación saludables sumando frutas y verduras de estación. Se sugiere continuar con dinámicas de oralidad y hábitos de higiene alimentaria en la sala.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. PLANIFICACIÓN GOED A4 */}
+              {activePrintSection === 'sequence' && sequenceToPrint && (
+                <div className="hidden print:block p-10 bg-white max-w-4xl mx-auto border-4 border-purple-600 rounded-3xl my-0">
+                  <div className="flex justify-between items-start border-b-4 border-purple-600 pb-4 mb-6">
+                    <div>
+                      <h1 className="text-lg font-black text-purple-950 uppercase font-kids">GERENCIA OPERATIVA DE EDUCACIÓN DIGITAL (GOED)</h1>
+                      <p className="text-xs font-bold text-purple-700 uppercase">Secuencia Didáctica de Innovación Pedagógica en Nivel Inicial</p>
+                    </div>
+                    <span className="text-3xl text-purple-700">🎓</span>
+                  </div>
+
+                  <div className="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200 mb-6 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-black text-purple-800 uppercase">Proyecto Escolar:</p>
+                      <p className="text-xs font-black text-slate-800 uppercase">{sequenceToPrint.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-purple-800 uppercase">Establecimiento:</p>
+                      <p className="text-xs font-black text-slate-800 uppercase">{sequenceToPrint.school}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-purple-800 uppercase">Planificador/a:</p>
+                      <p className="text-xs font-black text-slate-800 uppercase">{sequenceToPrint.author}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-purple-800 uppercase">Sala sugerida:</p>
+                      <p className="text-xs font-black text-slate-800 uppercase">SALA DE {sequenceToPrint.targetAge} AÑOS</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-[11px] font-black text-purple-800 uppercase border-b-2 border-purple-200 pb-1 mb-2">Propósitos y Fundamentación Pedagógica</h3>
+                      <p className="text-xs font-bold uppercase leading-relaxed text-slate-700 whitespace-pre-wrap">{sequenceToPrint.description}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-[11px] font-black text-purple-800 uppercase border-b-2 border-purple-200 pb-1 mb-2">Desarrollo Tecnopedagógico de Actividades</h3>
+                      <p className="text-xs font-bold uppercase leading-relaxed text-slate-700 whitespace-pre-wrap">{sequenceToPrint.activities}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-[11px] font-black text-purple-800 uppercase border-b-2 border-purple-200 pb-1 mb-2">Articulación Digital</h3>
+                      <p className="text-[10px] font-bold uppercase leading-relaxed text-slate-500">
+                        ESTE PLAN DE CLASES SE INTEGRA CON LA APLICACIÓN DE EDUCACIÓN ALIMENTARIA "EL DESAFÍO DEL PLATO SALUDABLE", COORDINADA POR LA GERENCIA OPERATIVA DE EDUCACIÓN DIGITAL (GOED).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-around items-center mt-20 pt-10 border-t-2 border-slate-200">
+                    <div className="text-center">
+                      <div className="w-40 h-8 border-b-2 border-slate-300 mb-1"></div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase">Firma del Planificador/a</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-40 h-8 border-b-2 border-slate-300 mb-1"></div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase">Sello de Supervisión Escolar</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ========================================== */}
+              {/* NOTIFICACIONES TOAST (No se imprime) */}
+              {/* ========================================== */}
+              {toast.show && (
+                <div className="fixed bottom-5 right-5 z-50 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 border-4 max-w-sm animate-bounce bg-purple-950 border-purple-400 print:hidden">
+                  <div className="p-2 rounded-full text-white bg-purple-600 flex items-center justify-center">
+                    <i className="fa-solid fa-file-circle-check text-lg"></i>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase text-purple-300">NOTIFICACIÓN OFICIAL GOED</p>
+                    <p className="text-[11px] font-black uppercase leading-tight">{toast.message}</p>
+                  </div>
+                  <button onClick={() => setToast(prev => ({ ...prev, show: false }))} className="text-slate-400 hover:text-white font-bold text-sm ml-2">✕</button>
+                </div>
+              )}
+
+              {/* PIE DE PÁGINA (No se imprime) */}
+              <footer className="bg-slate-800 text-slate-400 text-center py-4 text-[10px] font-bold uppercase tracking-wider border-t-4 border-emerald-500 print:hidden">
+                <div>
+                  Desarrollado para la Gerencia Operativa de Educación Digital (GOED) • GCABA.
+                  <span className="text-emerald-400 block sm:inline sm:ml-2">¡Propuesta Educativa de Acceso Libre y Gratuito!</span>
+                </div>
+              </footer>
+
+              {/* ========================================== */}
+              {/* MODAL PIN DE ADULTOS (No se imprime) */}
+              {/* ========================================== */}
+              {showPinModal.active && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
+                  <div className="bg-white rounded-3xl border-6 border-amber-400 p-6 max-w-sm w-full text-center shadow-2xl">
+                    <div className="bg-amber-100 p-3 rounded-full inline-block mb-3">
+                      <i className="fa-solid fa-lock text-2xl text-amber-600"></i>
+                    </div>
+                    <h3 className="text-lg font-black text-slate-800 uppercase mb-1">CONTROL DE ADULTOS</h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-4 leading-normal">
+                      Para ingresar escribe el PIN institucional: <strong className="text-amber-600">1234</strong>
+                    </p>
+
+                    <input 
+                      type="password" 
+                      maxLength="4"
+                      value={pinInput}
+                      onChange={(e) => setPinInput(e.target.value)}
+                      className="w-full text-center text-3xl font-bold tracking-widest p-2 border-3 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 bg-slate-50 mb-3"
+                      placeholder="••••"
+                    />
+
+                    {docenteError && <p className="text-[9px] text-red-500 font-extrabold uppercase mb-3">{docenteError}</p>}
+
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setShowPinModal({ active: false, targetScreen: '' });
+                          setPinInput('');
+                          setDocenteError('');
+                        }}
+                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold py-2 rounded-xl text-xs uppercase"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        onClick={handlePinValidation}
+                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2 rounded-xl text-xs uppercase"
+                      >
+                        Confirmar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
